@@ -8,7 +8,7 @@
 
 <title>Residency Bill Generator</title>
 
-<!-- External Libraries (Compatibility Mode: Removed strict SRI hashes for mobile support) -->
+<!-- External Libraries -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
@@ -41,6 +41,19 @@
   }
 
   input { font-size: 16px; font-family: inherit; } 
+  
+  /* Enhances the native date picker on desktop */
+  input[type="date"] {
+    cursor: pointer;
+  }
+  input[type="date"]::-webkit-calendar-picker-indicator {
+    cursor: pointer;
+    opacity: 0.6;
+    transition: opacity 0.2s;
+  }
+  input[type="date"]:hover::-webkit-calendar-picker-indicator {
+    opacity: 1;
+  }
 
   .wrap {
     max-width: 1140px;
@@ -176,16 +189,23 @@
         <input id="fixed" type="number" value="240" min="0" step="1" inputmode="decimal" maxlength="10">
       </div>
 
-      <div class="section-title">Additional Charges</div>
+      <!-- NEW: Water section separated into Units and Rate -->
+      <div class="section-title">Water Charges</div>
       <div class="field-row">
         <div class="field">
-          <label for="water">Water Bill (₹)</label>
-          <input id="water" type="number" value="700" min="0" step="1" inputmode="decimal" maxlength="10">
+          <label for="water-units">Consumption (Units)</label>
+          <input id="water-units" type="number" value="15" min="0" step="1" inputmode="decimal" maxlength="10">
         </div>
         <div class="field">
-          <label for="dustbin">Maintenance / Dustbin (₹)</label>
-          <input id="dustbin" type="number" value="100" min="0" step="1" inputmode="decimal" maxlength="10">
+          <label for="water-rate">Charge per Unit (₹)</label>
+          <input id="water-rate" type="number" value="20.00" min="0" step="0.01" inputmode="decimal" maxlength="10">
         </div>
+      </div>
+
+      <div class="section-title">Additional Charges</div>
+      <div class="field">
+        <label for="dustbin">Maintenance / Dustbin (₹)</label>
+        <input id="dustbin" type="number" value="100" min="0" step="1" inputmode="decimal" maxlength="10">
       </div>
 
       <div class="section-title">Payment Info</div>
@@ -215,14 +235,22 @@
           <div class="r-line"><span>Invoice Date</span><span id="r-date">–</span></div>
           <div class="r-line"><span>House Number</span><span id="r-house">–</span></div>
           <div class="r-dash"></div>
+          
           <div class="r-line"><span>Electricity (Units)</span><span id="r-units">–</span></div>
           <div class="r-line"><span>Unit Rate</span><span id="r-rate">–</span></div>
           <div class="r-line"><span>Fixed Charge</span><span id="r-fixed">–</span></div>
           <div class="r-formula" id="r-formula"></div>
+          
           <div class="r-dash"></div>
-          <div class="r-line"><span>Water Bill</span><span id="r-water">–</span></div>
+          <!-- NEW: Water receipt lines -->
+          <div class="r-line"><span>Water (Units)</span><span id="r-water-units">–</span></div>
+          <div class="r-line"><span>Water Rate</span><span id="r-water-rate">–</span></div>
+          <div class="r-formula" id="r-water-formula"></div>
+
+          <div class="r-dash"></div>
           <div class="r-line"><span>Maintenance</span><span id="r-dustbin">–</span></div>
           <div class="r-total"><span>Total Due</span><span id="r-total">–</span></div>
+          
           <div class="r-pay">
             Pay via PhonePe / Google Pay<br>
             <span class="num" id="r-upi">–</span>
@@ -255,10 +283,11 @@
   });
 
   const fmt = n => currencyFormatter.format(n);
+  
   const fmtDate = iso => {
     if(!iso) return '–';
     const [y, m, d] = iso.split('-');
-    return `${d}/${m}/${y}`;
+    return `${d}/${m}/${y.substring(2)}`;
   };
 
   function recalc() {
@@ -266,26 +295,39 @@
     const date = $('bill-date').value;
     const house = $('house-number').value || '–';
     
+    // Electricity
     const units = parseFloat($('units').value) || 0;
     const rate = parseFloat($('rate').value) || 0;
     const fixed = parseFloat($('fixed').value) || 0;
-    const water = parseFloat($('water').value) || 0;
-    const dustbin = parseFloat($('dustbin').value) || 0;
+    const billAmount = (units * rate) + fixed;
+
+    // Water
+    const waterUnits = parseFloat($('water-units').value) || 0;
+    const waterRate = parseFloat($('water-rate').value) || 0;
+    const waterTotal = (waterUnits * waterRate);
     
+    // Additional
+    const dustbin = parseFloat($('dustbin').value) || 0;
     const upi = $('upi-number').value || '–';
     const payee = $('payee-name').value || '–';
 
-    const billAmount = (units * rate) + fixed;
-    const total = billAmount + water + dustbin;
+    const total = billAmount + waterTotal + dustbin;
 
     $('r-title').textContent = (residency + ' BILL').toUpperCase();
     $('r-date').textContent = fmtDate(date);
     $('r-house').textContent = house;
+    
+    // Update Electricity Receipt
     $('r-units').textContent = units;
     $('r-rate').textContent = fmt(rate);
     $('r-fixed').textContent = fmt(fixed);
     $('r-formula').textContent = `${units} × ₹${rate} + ₹${fixed} = ₹${billAmount.toFixed(2)}`;
-    $('r-water').textContent = fmt(water);
+    
+    // Update Water Receipt
+    $('r-water-units').textContent = waterUnits;
+    $('r-water-rate').textContent = fmt(waterRate);
+    $('r-water-formula').textContent = `${waterUnits} × ₹${waterRate} = ₹${waterTotal.toFixed(2)}`;
+    
     $('r-dustbin').textContent = fmt(dustbin);
     $('r-total').textContent = fmt(total);
     
@@ -362,15 +404,21 @@
       const residency = $('residency-name').value || 'Residency';
       const date = fmtDate($('bill-date').value);
       const house = $('house-number').value || '–';
+      
       const units = parseFloat($('units').value) || 0;
       const rate = parseFloat($('rate').value) || 0;
       const fixed = parseFloat($('fixed').value) || 0;
-      const water = parseFloat($('water').value) || 0;
+      const billAmount = (units * rate) + fixed;
+
+      const waterUnits = parseFloat($('water-units').value) || 0;
+      const waterRate = parseFloat($('water-rate').value) || 0;
+      const waterTotal = (waterUnits * waterRate);
+
       const dustbin = parseFloat($('dustbin').value) || 0;
       const upi = $('upi-number').value || '–';
       const payee = $('payee-name').value || '–';
-      const billAmount = (units * rate) + fixed;
-      const total = billAmount + water + dustbin;
+      
+      const total = billAmount + waterTotal + dustbin;
 
       const pageW = 85; 
       const margin = 6;
@@ -419,7 +467,17 @@
       line(7);
       dashed();
 
-      row('Water Bill', fmt(water));
+      row('Water Units', waterUnits);
+      row('Water Rate', fmt(waterRate));
+      
+      pdf.setFont('courier', 'normal');
+      pdf.setFontSize(7.5);
+      pdf.setTextColor(100, 100, 100);
+      pdf.text(`${waterUnits}x${waterRate} = Rs${waterTotal.toFixed(2)}`, right, y, { align: 'right' });
+      pdf.setTextColor(0, 0, 0);
+      line(7);
+      dashed();
+
       row('Maintenance', fmt(dustbin));
 
       pdf.setDrawColor(0, 0, 0);

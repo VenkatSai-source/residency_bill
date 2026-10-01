@@ -1,6 +1,3 @@
-Here is the updated code. I changed the input to accept **KL** (Kiloliters, assuming "KW" was a typo since water is measured in liters/kiloliters), and the app now automatically multiplies that input by 1,000 to calculate and display the final billing in Liters.
-
-```html
 <!doctype html><html lang="en" data-theme="light"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#f8fafc"><title>My Home Invoice</title><script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script><style>
 :root {
   --a: #2563eb; --a2: #1d4ed8;
@@ -208,13 +205,10 @@ function update(){
         w=chkW?(wLiters*n('waterRate')):0,
         t=e+w+(chkM?n('maint'):0),
         d=$('date').value;
-  $('rName').textContent=($('name').value||'Residency').toUpperCase();
-  $('rDate').textContent=d?d.split('-').reverse().join('/'):'—';
+  $('rName').textContent=($('name').value\vert{}\vert{}'Residency').toUpperCase();$('rDate').textContent=d?d.split('-').reverse().join('/'):'—';
   $('rHouse').textContent=$('house').value||'—';
-  $('rUnits').textContent=n('units');
-  $('rRate').textContent=money(n('rate'));
-  $('rFixed').textContent=money(n('fixed'));
-  $('eFormula').textContent=`${n('units')} × ₹${n('rate')} + ₹${n('fixed')} = ₹${e.toFixed(2)}`;
+  $('rUnits').textContent=n('units');$('rRate').textContent=money(n('rate'));
+  $('rFixed').textContent=money(n('fixed'));$('eFormula').textContent=`${n('units')} × ₹${n('rate')} + ₹${n('fixed')} = ₹${e.toFixed(2)}`;
   $('rWater').textContent=wLiters+' L';
   $('rWaterRate').textContent=money(n('waterRate'));$('wFormula').textContent=`${wLiters} L × ₹${n('waterRate')} = ₹${w.toFixed(2)}`;
   $('rMaint').textContent=money(n('maint'));$('rTotal').textContent=money(t);
@@ -316,5 +310,3 @@ try{const d=JSON.parse(localStorage.getItem('billbook-defaults'));d?fill(d):upda
   updateQr();
 })();
 </script></body></html>
-
-```
